@@ -140,7 +140,7 @@ The results show that the residuals are not equally variable for low and high va
 
 ## Part 6: Conclusion
 
-Here we don't have test data we only use data to create model. As this was my initial model Ihaven't created test and training data to predict values using the model. 
+Here we don't have test data we only use data to create model. As this was my initial model I haven't created test and training data to predict values using the model. 
 
 This model can be used to predict audience scores but it has some limitations, we cannot input extreme values in model as we can see from residual that it behaves differently at extreme values. 
 
