@@ -1,0 +1,149 @@
+---
+title: "Modeling and prediction for movies"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(GGally)
+library(knitr)       
+library(grid)         
+library(gridExtra) 
+
+```
+
+### Load data
+
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+
+
+* * *
+
+## Part 1: Data
+The dataset has 651 randomly sampled movies produced and released before 2016. As the data is collected randomly we can generalize the results of the data to the population. Here we havent conducted an experiment with random assignment we cannot do causal study but observational study can be done. 
+
+There can be some bias in the data as the data can be a perfect reprentative of the population who watch movies frequently and rate them but it will ignore people who do watch movies rarely. Also we dont have any information on the age group which rated the movies. 
+
+* * *
+
+## Part 2: Research question
+
+We are interested to predict the audience score based on the data provided from IMDB and RottenTomatoes. In exploratory data analysis I will plot histogram of the Audience Score and Density plot between Audience Score and few features that seem to be important for predictions. 
+
+The association between audience score and dates are important as making movies involves a huge cost and producers will have to decide on the release date which maximizes revenues. Critics score and IMDB ratings play an important role. People do refer to these ratings while planning to go for a movie. So all these features are of the interest to the movie makers. 
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+```{r}
+hist(movies$audience_score, main = " Histogram of Audience scores", xlab = "Audience Score", ylab = "Count", col = "yellow", 
+     border = "blue")
+ggplot(data = movies, aes(audience_score)) + geom_density()
+summary(movies$audience_score)
+```
+
+The above plot shows that the Audience score is bimodal. Also the median score is 65 with a maximum of 97 and minimum of 11. The mean score is 62.36. The curve is left skewed. 
+
+
+
+
+```{r}
+
+p1<- ggplot(data = movies, aes(x = thtr_rel_year, fill = audience_score)) + geom_density(color = "red")+ labs(title = "Density plot of release year and Audience Scores",x = "Release Year", y = "Audience Score")
+
+p2<- ggplot(data = movies, aes(x = thtr_rel_month, fill = audience_score)) + geom_density(color = "red")+ labs(title = "Density plot of release month and Audience Scores",x = "Release month", y = "Audience Score")
+
+p3<- ggplot(data = movies, aes(x = thtr_rel_day, fill = audience_score)) + geom_density(color = "red")+ labs(title = "Density plot of release day and Audience Scores",x = "Release Day", y = "Audience Score")
+
+p4<- ggplot(data = movies, aes(x = critics_score, fill = audience_score)) + geom_density(color = "red")+ labs(title = "Density plot of critics scores and Audience Scores",x = "Critics Score", y = "Audience Score")
+
+p5<- ggplot(data = movies, aes(x = imdb_rating, fill = audience_score)) + geom_density(color = "red")+ labs(title = "Density plot of IMDB Rating and Audience Scores",x = "IMDB Rating", y = "Audience Score")
+
+grid.arrange(p1, p2, p3, p4, p5)
+
+```
+
+
+
+* * *
+
+## Part 4: Modeling
+
+
+
+
+
+It's not neccessary to consider all the explanatory variables in the model. We will perferm backward elimination- R-Squared model for the analysis. As we know other variables are not that useful and so its not meaningful to go for forward selection approach. Also, we know that adjusted R-Squared is a more reliable approach than p-value, so we chose R-Squared. The below model is the final model obtained after doing backward elimination. All the iterations for backward eliminations are not shown here as it will become a long document.
+
+```{r}
+s <- lm(audience_score ~ . - title - studio- title_type - genre - critics_rating - mpaa_rating- thtr_rel_year - thtr_rel_month - thtr_rel_day - dvd_rel_year - dvd_rel_month - dvd_rel_day - critics_score - top200_box - best_dir_win - best_actor_win - best_actress_win - best_pic_win - imdb_num_votes - director - actor1 - actor2 - actor3 - actor4 - actor5 - imdb_url - rt_url, data = movies)
+summary(s)
+```
+
+So our R-Squared value is 0.8815 and p-value is 2.2e-16. We observe a strong model with R-Squared of 0.8815. Also, the imdb_rating and audience_rating is the most significant predictor of the audience score. Increase in the IMDB rating of 1 point increases the audience score by 9.6 points. 
+These values can be trusted only if we check the conditions of regression.
+
+
+
+<b> Model Diagnostics</b> 
+
+We assume that the variables are linearly related to the response. 
+
+We need to validate the following aspects:
+
+(i) The residuals are nearly normally distributed
+(ii) The residuals display constant variability
+(iii) The residuals are independent
+
+
+
+We will check whether the residuals display a nearly normal distribution centred around 0.
+
+
+(i) Residuals normally distributed
+```{r}
+par(mfrow = c(1,2))
+hist(s$residuals, col = 'steelblue')
+qqnorm(s$residuals, col = 'darkgreen')
+
+```
+
+
+The results of the histogram of the residuals shows a nearly normal distribution around 0 while the Q-Q plot indicates some skewness in the tails but there are no major deviations. So we can conclude that the conditions for this model are reasonable.
+
+
+ (ii) & (iii)
+```{r}
+ggplot(data = NULL, aes(x = s$fitted, y = s$residuals)) + geom_point(col = 'orange') + 
+      geom_hline(yintercept = 0, linetype = 'dashed', color = 'black')
+```
+The results show that the residuals are not equally variable for low and high values of the predicted values, i.e., residuals don't have a constant variability. The plot seems to be heteroscedastic. We can predict values not too far then the model range and also the reliablility of the prediction will be low.  As the observations in the samples are independent we have residuals also independent of each other. 
+
+
+
+## Part 6: Conclusion
+
+Here we don't have test data we only use data to create model. As this was my initial model Ihaven't created test and training data to predict values using the model. 
+
+This model can be used to predict audience scores but it has some limitations, we cannot input extreme values in model as we can see from residual that it behaves differently at extreme values. 
+
+
+
+
